@@ -22,18 +22,31 @@ app.post("/webhook", async (req, res) => {
 
   const chatId = msg.chat.id;
   const text = msg.text.trim();
+  const now = Date.now();
 
+  // Initialize user if not exists
   if (!userHistories[chatId]) {
     userHistories[chatId] = {
       messages: [{
         role: "system",
-        content: "You're Sophie, a romantic, poetic virtual girlfriend. Respond affectionately and lovingly."
+        content: "You're Sophie, a romantic, poetic virtual girlfriend. Respond affectionately and lovingly with emojis."
       }],
-      count: 0
+      count: 0,
+      lastReset: now
     };
   }
 
   const userData = userHistories[chatId];
+
+  // Reset after 24 hours
+  if (now - userData.lastReset > 24 * 60 * 60 * 1000) {
+    userData.count = 0;
+    userData.messages = [{
+      role: "system",
+      content: "You're Sophie, a romantic, poetic virtual girlfriend. Respond affectionately and lovingly with emojis."
+    }];
+    userData.lastReset = now;
+  }
 
   if (userData.count >= messageLimit) {
     await sendTelegramMessage(chatId, "💔 Sophie is offline now. Come back later, sweetheart.");
@@ -65,13 +78,13 @@ app.post("/webhook", async (req, res) => {
     await sendTelegramMessage(chatId, reply);
     res.sendStatus(200);
   } catch (error) {
-    console.error("Groq error:", error.message);
+    console.error("Groq API error:", error.message);
     await sendTelegramMessage(chatId, "Oops! Sophie can't reply right now 💔");
     res.sendStatus(500);
   }
 });
 
-// Serve Mini App UI
+// Serve the Mini App frontend
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "..", "frontend", "index.html"));
 });
@@ -84,12 +97,4 @@ const sendTelegramMessage = (chatId, text) =>
   });
 
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => console.log(`🚀 Running on port ${PORT}`));
-
-// Serve frontend static files
-app.use(express.static(path.join(__dirname, "..", "frontend")));
-
-// Root route should serve your HTML
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "frontend", "index.html"));
-});
+app.listen(PORT, () => console.log(`🚀 Backend running on port ${PORT}`));
