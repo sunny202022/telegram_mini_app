@@ -3,209 +3,109 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Romantic Chat 💬</title>
+  <title>Chat with Sophie 💖</title>
   <style>
     body {
+      font-family: Arial, sans-serif;
+      background: #fff0f5;
       margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(to bottom right, #ffe4e1, #ffccd5);
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      color: #4a0033;
+      padding: 20px;
     }
-
-    header {
-      background: #ff69b4;
-      color: white;
+    h1 {
       text-align: center;
-      padding: 1rem;
-      font-size: 1.5rem;
-      font-weight: bold;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      color: #d63384;
     }
-
-    #botProfile {
-      display: flex;
-      align-items: center;
-      background: #fff0f5;
-      padding: 0.8rem;
-      border-bottom: 1px solid #ffc0cb;
-    }
-
-    #botProfile img {
-      width: 50px;
-      height: 50px;
-      border-radius: 50%;
-      margin-right: 12px;
-      border: 2px solid #ff69b4;
-    }
-
-    #botProfile .details {
-      line-height: 1.2;
-    }
-
-    #chatBox {
-      flex: 1;
-      padding: 1rem;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 0.5rem;
-    }
-
-    .message {
-      max-width: 75%;
-      padding: 10px 15px;
-      border-radius: 15px;
-      line-height: 1.4;
-      word-wrap: break-word;
-      position: relative;
-      font-size: 0.95rem;
-    }
-
-    .user {
+    #chat {
+      max-width: 600px;
+      margin: 20px auto;
       background: #fff;
-      align-self: flex-end;
-      border-top-right-radius: 0;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 20px;
     }
-
-    .bot {
-      background: #ffeaf1;
-      align-self: flex-start;
-      border-top-left-radius: 0;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    .message {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 10px;
     }
-
-    .bot::after {
-      content: "💖";
-      position: absolute;
-      right: -20px;
-      top: 0;
+    .user {
+      background: #d1e7dd;
+      text-align: right;
     }
-
-    #inputSection {
+    .sophie {
+      background: #f8d7da;
+      text-align: left;
+    }
+    #inputArea {
       display: flex;
-      padding: 0.7rem;
-      border-top: 1px solid #ccc;
-      background: #fff0f5;
+      margin-top: 15px;
     }
-
-    input[type="text"] {
+    input {
       flex: 1;
-      padding: 0.7rem;
+      padding: 10px;
+      border-radius: 8px;
       border: 1px solid #ccc;
-      border-radius: 20px;
-      outline: none;
-      font-size: 1rem;
     }
-
     button {
-      padding: 0.7rem 1rem;
-      margin-left: 0.5rem;
-      background: #ff69b4;
-      color: white;
+      padding: 10px 16px;
+      margin-left: 10px;
       border: none;
-      border-radius: 20px;
-      font-weight: bold;
+      border-radius: 8px;
+      background-color: #d63384;
+      color: white;
       cursor: pointer;
-      font-size: 1rem;
     }
-
-    #offlineMsg {
-      text-align: center;
-      color: #888;
-      font-style: italic;
-      margin: 0.5rem;
-      font-size: 0.9rem;
+    button:hover {
+      background-color: #b82c6d;
     }
   </style>
 </head>
 <body>
+  <h1>💞 Chat with Sophie</h1>
+  <div id="chat"></div>
 
-<header>💘 Sweetheart Chat</header>
-
-<div id="botProfile">
-  <img src="https://i.imgur.com/4ZQZQ5V.png" alt="Bot Avatar">
-  <div class="details">
-    <strong>Sophie 💋</strong><br>
-    <small>Your virtual romantic companion</small>
+  <div id="inputArea">
+    <input type="text" id="userInput" placeholder="Say something romantic..." />
+    <button onclick="sendMessage()">Send</button>
   </div>
-</div>
 
-<div id="chatBox"></div>
+  <script>
+    const chat = document.getElementById("chat");
 
-<div id="inputSection">
-  <input type="text" id="userInput" placeholder="Send a love note..." />
-  <button onclick="sendMessage()">💌</button>
-</div>
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      const userText = input.value.trim();
+      if (!userText) return;
 
-<div id="offlineMsg"></div>
+      appendMessage(userText, "user");
+      input.value = "";
 
-<script>
-  let messages = [{
-    role: "system",
-    content: "You are a romantic, poetic, and loving girlfriend. Respond sweetly and affectionately. also use emojis in your responses. Keep the conversation light and loving."
-  }];
-  let messageCount = 0;
-  const messageLimit = 10;
+      const messages = [
+        { role: "system", content: "You're Sophie, a romantic, poetic virtual girlfriend. Respond affectionately and lovingly with emojis." },
+        { role: "user", content: userText }
+      ];
 
-  async function sendMessage() {
-    const input = document.getElementById("userInput");
-    const chatBox = document.getElementById("chatBox");
-    const offlineMsg = document.getElementById("offlineMsg");
+      try {
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages })
+        });
 
-    if (messageCount >= messageLimit) {
-      offlineMsg.innerText = "💔 Sophie is offline now... Come back later, love.";
-      return;
+        const data = await res.json();
+        appendMessage(data.reply, "sophie");
+      } catch (err) {
+        appendMessage("💔 Sophie is unavailable right now...", "sophie");
+      }
     }
 
-    const userMsg = input.value.trim();
-    if (!userMsg) return;
-
-    // Display user message
-    chatBox.innerHTML += `<div class="message user">${userMsg}</div>`;
-    chatBox.scrollTop = chatBox.scrollHeight;
-    input.value = "";
-
-    messages.push({ role: "user", content: userMsg });
-
-    // Show "typing..."
-    const typing = document.createElement("div");
-    typing.className = "message bot";
-    typing.textContent = "Sophie is typing...";
-    chatBox.appendChild(typing);
-    chatBox.scrollTop = chatBox.scrollHeight;
-
-    try {
-      const res = await fetch("http://jobs4all-bot.onrender.com/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ messages })
-      });
-
-      const data = await res.json();
-      typing.remove();
-
-      if (data.reply) {
-        messages.push({ role: "assistant", content: data.reply });
-        chatBox.innerHTML += `<div class="message bot">${data.reply}</div>`;
-        chatBox.scrollTop = chatBox.scrollHeight;
-        messageCount++;
-      } else {
-        chatBox.innerHTML += `<div class="message bot">Oops... something went wrong. 💔</div>`;
-      }
-
-      if (messageCount >= messageLimit) {
-        offlineMsg.innerText = "💔 Sophie is offline now... Come back later, love.";
-      }
-    } catch (error) {
-      typing.remove();
-      chatBox.innerHTML += `<div class="message bot">Error: Can't reach Sophie right now.</div>`;
+    function appendMessage(text, sender) {
+      const div = document.createElement("div");
+      div.className = "message " + sender;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
     }
-  }
-</script>
-
+  </script>
 </body>
 </html>
