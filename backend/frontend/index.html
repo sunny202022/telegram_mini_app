@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Chat with Sophie 💖</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #fff0f5;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #d63384;
+    }
+    #chat {
+      max-width: 600px;
+      margin: 20px auto;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 20px;
+    }
+    .message {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 10px;
+    }
+    .user {
+      background: #d1e7dd;
+      text-align: right;
+    }
+    .sophie {
+      background: #f8d7da;
+      text-align: left;
+    }
+    #inputArea {
+      display: flex;
+      margin-top: 15px;
+    }
+    input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    button {
+      padding: 10px 16px;
+      margin-left: 10px;
+      border: none;
+      border-radius: 8px;
+      background-color: #d63384;
+      color: white;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #b82c6d;
+    }
+  </style>
+</head>
+<body>
+  <h1>💞 Chat with Sophie</h1>
+  <div id="chat"></div>
+
+  <div id="inputArea">
+    <input type="text" id="userInput" placeholder="Say something romantic..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    const chat = document.getElementById("chat");
+
+    async function sendMessage() {
+      const input = document.getElementById("userInput");
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      appendMessage(userText, "user");
+      input.value = "";
+
+      const messages = [
+        { role: "system", content: "You're Sophie, a romantic, poetic virtual girlfriend. Respond affectionately and lovingly with emojis." },
+        { role: "user", content: userText }
+      ];
+
+      try {
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ messages })
+        });
+
+        const data = await res.json();
+        appendMessage(data.reply, "sophie");
+      } catch (err) {
+        appendMessage("💔 Sophie is unavailable right now...", "sophie");
+      }
+    }
+
+    function appendMessage(text, sender) {
+      const div = document.createElement("div");
+      div.className = "message " + sender;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+  </script>
+</body>
+</html>
