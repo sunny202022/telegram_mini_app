@@ -86,11 +86,12 @@
       ];
 
       try {
-        const res = await fetch("/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages })
-        });
+              const res = await fetch("https://jobs4all-bot.onrender.com/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages })
+      });
+
 
         const data = await res.json();
         appendMessage(data.reply, "sophie");
