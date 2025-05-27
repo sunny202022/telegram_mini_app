@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sophie 💘</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body {
+      margin: 0;
+      background: linear-gradient(to bottom right, #fff0f5, #ffd3e0);
+      font-family: 'Segoe UI', sans-serif;
+    }
+    .chatbox {
+      max-width: 400px;
+      margin: auto;
+      padding: 1rem;
+      height: 95vh;
+      overflow-y: auto;
+    }
+    .message {
+      padding: 10px 15px;
+      border-radius: 15px;
+      margin-bottom: 10px;
+      max-width: 75%;
+      font-size: 0.95rem;
+    }
+    .user { background: #fff; align-self: flex-end; margin-left: auto; }
+    .bot  { background: #ffeaf1; align-self: flex-start; margin-right: auto; }
+    .input {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      display: flex;
+      padding: 10px;
+      background: #fff0f5;
+    }
+    input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 20px;
+      border: 1px solid #ccc;
+    }
+    button {
+      margin-left: 10px;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 20px;
+      background: #ff69b4;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <div class="chatbox" id="chat"></div>
+  <div class="input">
+    <input id="message" type="text" placeholder="Send a love note..." />
+    <button onclick="sendMessage()">Send</button>
+  </div>
+
+  <script>
+    const chat = document.getElementById("chat");
+    const input = document.getElementById("message");
+
+    async function sendMessage() {
+      const msg = input.value;
+      if (!msg) return;
+
+      addMessage(msg, "user");
+      input.value = "";
+
+      try {
+        const res = await fetch("/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ userMessage: msg })
+        });
+        const data = await res.json();
+        addMessage(data.reply, "bot");
+      } catch {
+        addMessage("Sophie is offline right now 💔", "bot");
+      }
+    }
+
+    function addMessage(text, sender) {
+      const el = document.createElement("div");
+      el.className = `message ${sender}`;
+      el.textContent = text;
+      chat.appendChild(el);
+      chat.scrollTop = chat.scrollHeight;
+    }
+  </script>
+</body>
+</html>
