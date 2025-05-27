@@ -83,7 +83,7 @@ const sendTelegramMessage = (chatId, text) =>
     parse_mode: "Markdown"
   });
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Running on port ${PORT}`));
 const path = require("path");
 
