@@ -6,37 +6,27 @@ require("dotenv").config();
 
 const app = express();
 app.use(bodyParser.json());
+app.use(express.static(path.join(__dirname, "..", "frontend")));
+console.log("Serving frontend from:", path.join(__dirname, "..", "frontend"));
 
-// Resolve frontend folder path relative to current file
-const frontendPath = path.resolve(__dirname, "..", "frontend");
-console.log("Serving frontend from:", frontendPath);
-app.use(express.static(frontendPath));
-
-// Environment variables check
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 
 if (!TELEGRAM_TOKEN) {
-  console.error("Error: TELEGRAM_BOT_TOKEN is NOT set!");
-  process.exit(1);
+  throw new Error("TELEGRAM_BOT_TOKEN is NOT set!");
 }
 if (!GROQ_API_KEY) {
-  console.error("Error: GROQ_API_KEY is NOT set!");
-  process.exit(1);
+  throw new Error("GROQ_API_KEY is NOT set!");
 }
 
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
-
 const userHistories = {};
 const messageLimit = 10;
 
-// Telegram webhook route
+// Telegram webhook handler
 app.post("/webhook", async (req, res) => {
   const msg = req.body?.message;
-  if (!msg || !msg.text) {
-    console.log("Received webhook without message or text");
-    return res.sendStatus(200);
-  }
+  if (!msg || !msg.text) return res.sendStatus(200);
 
   const chatId = msg.chat.id;
   const text = msg.text.trim();
@@ -51,12 +41,10 @@ app.post("/webhook", async (req, res) => {
       count: 0,
       lastReset: now
     };
-    console.log(`New user session started: ${chatId}`);
   }
 
   const userData = userHistories[chatId];
 
-  // Reset count and messages every 24 hours
   if (now - userData.lastReset > 24 * 60 * 60 * 1000) {
     userData.count = 0;
     userData.messages = [{
@@ -64,17 +52,14 @@ app.post("/webhook", async (req, res) => {
       content: "You're Sophie, a romantic, poetic virtual girlfriend. Respond affectionately and lovingly with emojis."
     }];
     userData.lastReset = now;
-    console.log(`Resetting user session: ${chatId}`);
   }
 
   if (userData.count >= messageLimit) {
-    console.log(`Message limit reached for user: ${chatId}`);
     await sendTelegramMessage(chatId, "💔 Sophie is offline now. Come back later, sweetheart.");
     return res.sendStatus(200);
   }
 
   userData.messages.push({ role: "user", content: text });
-  console.log(`User message [${chatId}]: ${text}`);
 
   try {
     const groqRes = await axios.post(
@@ -95,7 +80,6 @@ app.post("/webhook", async (req, res) => {
     const reply = groqRes.data.choices[0].message.content;
     userData.messages.push({ role: "assistant", content: reply });
     userData.count++;
-    console.log(`Sophie reply [${chatId}]: ${reply}`);
 
     await sendTelegramMessage(chatId, reply);
     res.sendStatus(200);
@@ -106,14 +90,41 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
-// Serve frontend index.html on root route (fallback)
+// New: Chat route for frontend (Mini App)
+app.post("/chat", async (req, res) => {
+  const { messages } = req.body;
+
+  if (!messages || !Array.isArray(messages)) {
+    return res.status(400).json({ error: "Invalid messages" });
+  }
+
+  try {
+    const groqRes = await axios.post(
+      "https://api.groq.com/openai/v1/chat/completions",
+      {
+        model: "llama3-8b-8192",
+        messages,
+        temperature: 0.85
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${GROQ_API_KEY}`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    const reply = groqRes.data.choices[0].message.content;
+    return res.json({ reply });
+  } catch (error) {
+    console.error("Groq API error:", error.message);
+    return res.status(500).json({ error: "Can't reach Sophie right now." });
+  }
+});
+
+// Serve Mini App frontend
 app.get("/", (req, res) => {
-  res.sendFile(path.join(frontendPath, "index.html"), err => {
-    if (err) {
-      console.error("Error sending index.html:", err);
-      res.status(500).send("Error loading page");
-    }
-  });
+  res.sendFile(path.join(__dirname, "..", "frontend", "index.html"));
 });
 
 const sendTelegramMessage = (chatId, text) =>
@@ -121,8 +132,6 @@ const sendTelegramMessage = (chatId, text) =>
     chat_id: chatId,
     text,
     parse_mode: "Markdown"
-  }).catch(err => {
-    console.error("Error sending telegram message:", err.message);
   });
 
 const PORT = process.env.PORT || 10000;
