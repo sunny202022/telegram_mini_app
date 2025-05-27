@@ -85,3 +85,12 @@ const sendTelegramMessage = (chatId, text) =>
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`🚀 Running on port ${PORT}`));
+const path = require("path");
+
+// Serve frontend static files
+app.use(express.static(path.join(__dirname, "..", "frontend")));
+
+// Root route should serve your HTML
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "..", "frontend", "index.html"));
+});
