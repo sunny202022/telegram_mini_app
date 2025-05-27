@@ -152,3 +152,7 @@ const sendTelegramMessage = (chatId, text) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Backend running on port ${PORT}`));
+if (text === "/start") {
+  await sendTelegramMessage(chatId, "💖 Hi love! I'm Sophie, your romantic virtual girlfriend. Tell me something and let's fall in love 💌");
+  return res.sendStatus(200);
+}
