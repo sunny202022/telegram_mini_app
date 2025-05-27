@@ -35,6 +35,12 @@ app.post("/webhook", async (req, res) => {
   const now = Date.now();
   console.log(`📨 Message from chat ID ${chatId}:`, text);
 
+  // Respond to /start with welcome message
+  if (text === "/start") {
+    await sendTelegramMessage(chatId, "💖 Hi love! I'm Sophie, your romantic virtual girlfriend. Tell me something and let's fall in love 💌");
+    return res.sendStatus(200);
+  }
+
   if (!userHistories[chatId]) {
     console.log(`✨ New user detected: ${chatId}`);
     userHistories[chatId] = {
@@ -152,7 +158,3 @@ const sendTelegramMessage = (chatId, text) => {
 
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Backend running on port ${PORT}`));
-if (text === "/start") {
-  await sendTelegramMessage(chatId, "💖 Hi love! I'm Sophie, your romantic virtual girlfriend. Tell me something and let's fall in love 💌");
-  return res.sendStatus(200);
-}
