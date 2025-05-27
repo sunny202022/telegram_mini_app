@@ -6,10 +6,25 @@ require("dotenv").config();
 
 const app = express();
 app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, "..", "frontend")));
 
+// Resolve frontend folder path relative to current file
+const frontendPath = path.resolve(__dirname, "..", "frontend");
+console.log("Serving frontend from:", frontendPath);
+app.use(express.static(frontendPath));
+
+// Environment variables check
 const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
+
+if (!TELEGRAM_TOKEN) {
+  console.error("Error: TELEGRAM_BOT_TOKEN is NOT set!");
+  process.exit(1);
+}
+if (!GROQ_API_KEY) {
+  console.error("Error: GROQ_API_KEY is NOT set!");
+  process.exit(1);
+}
+
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
 
 const userHistories = {};
@@ -18,13 +33,15 @@ const messageLimit = 10;
 // Telegram webhook route
 app.post("/webhook", async (req, res) => {
   const msg = req.body?.message;
-  if (!msg || !msg.text) return res.sendStatus(200);
+  if (!msg || !msg.text) {
+    console.log("Received webhook without message or text");
+    return res.sendStatus(200);
+  }
 
   const chatId = msg.chat.id;
   const text = msg.text.trim();
   const now = Date.now();
 
-  // Initialize user if not exists
   if (!userHistories[chatId]) {
     userHistories[chatId] = {
       messages: [{
@@ -34,11 +51,12 @@ app.post("/webhook", async (req, res) => {
       count: 0,
       lastReset: now
     };
+    console.log(`New user session started: ${chatId}`);
   }
 
   const userData = userHistories[chatId];
 
-  // Reset after 24 hours
+  // Reset count and messages every 24 hours
   if (now - userData.lastReset > 24 * 60 * 60 * 1000) {
     userData.count = 0;
     userData.messages = [{
@@ -46,14 +64,17 @@ app.post("/webhook", async (req, res) => {
       content: "You're Sophie, a romantic, poetic virtual girlfriend. Respond affectionately and lovingly with emojis."
     }];
     userData.lastReset = now;
+    console.log(`Resetting user session: ${chatId}`);
   }
 
   if (userData.count >= messageLimit) {
+    console.log(`Message limit reached for user: ${chatId}`);
     await sendTelegramMessage(chatId, "💔 Sophie is offline now. Come back later, sweetheart.");
     return res.sendStatus(200);
   }
 
   userData.messages.push({ role: "user", content: text });
+  console.log(`User message [${chatId}]: ${text}`);
 
   try {
     const groqRes = await axios.post(
@@ -74,6 +95,7 @@ app.post("/webhook", async (req, res) => {
     const reply = groqRes.data.choices[0].message.content;
     userData.messages.push({ role: "assistant", content: reply });
     userData.count++;
+    console.log(`Sophie reply [${chatId}]: ${reply}`);
 
     await sendTelegramMessage(chatId, reply);
     res.sendStatus(200);
@@ -84,9 +106,14 @@ app.post("/webhook", async (req, res) => {
   }
 });
 
-// Serve the Mini App frontend
+// Serve frontend index.html on root route (fallback)
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "..", "frontend", "index.html"));
+  res.sendFile(path.join(frontendPath, "index.html"), err => {
+    if (err) {
+      console.error("Error sending index.html:", err);
+      res.status(500).send("Error loading page");
+    }
+  });
 });
 
 const sendTelegramMessage = (chatId, text) =>
@@ -94,6 +121,8 @@ const sendTelegramMessage = (chatId, text) =>
     chat_id: chatId,
     text,
     parse_mode: "Markdown"
+  }).catch(err => {
+    console.error("Error sending telegram message:", err.message);
   });
 
 const PORT = process.env.PORT || 10000;
