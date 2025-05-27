@@ -179,7 +179,7 @@
     chatBox.scrollTop = chatBox.scrollHeight;
 
     try {
-      const res = await fetch("http://jobs4all-bot.onrender.com//chat", {
+      const res = await fetch("http://jobs4all-bot.onrender.com/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ messages })
